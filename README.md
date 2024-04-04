@@ -1,4 +1,8 @@
+
+
 # DECODE
+
+<img src="./decode.png" width="150">
 
 DECODE, or "DEtection de COmpromissions dans les DonnéEs DFIR-ORC" in French, is a stand-alone tool specifically designed for detecting anomalous Portable Executable (PE) files among the NTFSInfo data collected by DFIR-ORC on Microsoft Windows system.
 
@@ -20,7 +24,7 @@ This tool was presented at the DFRWS 2024 conference.
 To start the analysis:
 
 ```bash
-machine_analysis NTFSInfo_FILE
+machine_analysis NTFSInfo_FILE --csv_output Results_data.csv  --pdf_output file_tree.pdf
 ```
 
 * NTFSInfo_FILE: NTFSInfo file collected by DFIR-ORC in csv format;
