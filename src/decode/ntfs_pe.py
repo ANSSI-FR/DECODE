@@ -9,7 +9,7 @@ import graphviz
 import numpy as np
 import pandas as pd
 from dateutil.relativedelta import relativedelta
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, StandardScaler
 
 from decode.file_graph import SimpleFileGraph
 from decode.stats_functions import anomaly_detection, fisher, prob_x
@@ -21,10 +21,12 @@ def _score_normalization(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
-def _label_encoding(data: pd.DataFrame, attribute: str) -> pd.DataFrame:
-    label_encoder = LabelEncoder()
-    data[attribute] = label_encoder.fit_transform(data[attribute])
+def _one_hot_encoding(data: pd.DataFrame, attribute: str) -> pd.DataFrame:
+    encoded_attribute = pd.get_dummies(data[[attribute]])
+    data = pd.concat([data, encoded_attribute], axis=1)
+    data = data.drop(attribute, axis=1)
     return data
+
 
 
 def _replace_value(data: pd.DataFrame, column_name: str) -> pd.DataFrame:
@@ -268,7 +270,7 @@ class NTFSPE:
                 "FilesCreatedAtSameTime",
             ]
         ]
-        self.process_data = _label_encoding(self.process_data, "Platform")
+        self.process_data = _one_hot_encoding(self.process_data, "Platform")
         self.process_data["FilesCreatedAtSameTime"] = self.process_data[
             "FilesCreatedAtSameTime"
         ].apply(lambda x: 1 / x)
