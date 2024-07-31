@@ -9,10 +9,91 @@ import graphviz
 import numpy as np
 import pandas as pd
 from dateutil.relativedelta import relativedelta
-from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from decode.file_graph import SimpleFileGraph
 from decode.stats_functions import anomaly_detection, fisher, prob_x
+
+from .config import EXCLUDED_FILES
+
+
+col_list = [
+    "ComputerName",
+    "VolumeID",
+    "File",
+    "ParentName",
+    "Extension",
+    "SizeInBytes",
+    "Attributes",
+    "CreationDate",
+    "LastModificationDate",
+    "LastAccessDate",
+    "LastAttrChangeDate",
+    "FileNameCreationDate",
+    "FileNameLastModificationDate",
+    "FileNameLastAccessDate",
+    "FileNameLastAttrModificationDate",
+    "RecordInUse",
+    "SHA1",
+    "Version",
+    "OriginalFileName",
+    "Platform",
+    "TimeStamp",
+    "SubSystem",
+    "FileType",
+    "FileOS",
+    "FilenameFlags",
+    "PeSHA1",
+    "PeSHA256",
+    "AuthenticodeStatus",
+    "AuthenticodeSigner",
+    "AuthenticodeSignerThumbprint",
+    "AuthenticodeCA",
+    "AuthenticodeCAThumbprint",
+    "PeMD5",
+    "SnapshotID",
+    "SignedHash",
+]
+
+
+def time_window_management(
+    data: pd.DataFrame,
+    time_windows: int,
+    start_date: Optional[str],
+    end_date: Optional[str]
+) -> pd.DataFrame:
+    """Time window filtering."""
+    date_format = "%Y-%m-%d"
+    date = datetime.now(timezone.utc)
+    if end_date is None:
+        end_date = data.FileNameCreationDate.max()
+    else:
+        end_date = datetime.strptime(
+            end_date, date_format
+        ).replace(tzinfo=timezone.utc)
+    if start_date is None:
+        # Manages dates in the future
+        if sum(data.FileNameCreationDate > date) > 0:
+            logging.warning(
+                "%d file(s) have future dates",
+                sum(data.FileNameCreationDate > date),
+            )
+            # No other file
+            if sum(data.FileNameCreationDate <= date) > 0:
+                last_date = data[
+                    data.FileNameCreationDate <= date
+                ].FileNameCreationDate.max()
+            else:
+                last_date = date
+            start_date = last_date - relativedelta(months=time_windows)
+        else:
+            start_date = end_date - relativedelta(months=time_windows)
+    else:
+        start_date = datetime.strptime(
+            start_date, date_format
+        ).replace(tzinfo=timezone.utc)
+    logging.info("Time window selected: %s - %s", start_date, end_date)
+    return start_date, end_date
 
 
 def _score_normalization(data: pd.DataFrame) -> pd.DataFrame:
@@ -28,7 +109,6 @@ def _one_hot_encoding(data: pd.DataFrame, attribute: str) -> pd.DataFrame:
     return data
 
 
-
 def _replace_value(data: pd.DataFrame, column_name: str) -> pd.DataFrame:
     data[column_name] = data[column_name].apply(
         lambda x: 1 if not (pd.isna(x) or x == "nan") else 0
@@ -36,16 +116,23 @@ def _replace_value(data: pd.DataFrame, column_name: str) -> pd.DataFrame:
     return data
 
 
-def fullpath_creation(data: pd.DataFrame) -> pd.DataFrame:
+def fullpath_creation(data: pd.DataFrame, volume: Optional[str]) -> pd.DataFrame:
     """Transform paths into PureWindowsPath type."""
-    data.loc[pd.isna(data["ParentName"]), "ParentName"] = "\\"
     data["FullPath"] = [
         PureWindowsPath(x, y) for x, y in zip(data["ParentName"], data["File"])
     ]
+    if volume:
+        data["FullPath"] = [
+            PureWindowsPath(volume).joinpath(x) for x in data["FullPath"]
+        ]
     return data
 
 
-def nbfiles_created_at_same_time(x: pd.Timestamp, dates: pd.Series, s: int) -> int:
+def nbfiles_created_at_same_time(
+    x: pd.Timestamp,
+    dates: pd.Series,
+    s: int
+) -> int:
     """Reurns the number of files created during the
     +/-s time interval around the date.
 
@@ -53,7 +140,7 @@ def nbfiles_created_at_same_time(x: pd.Timestamp, dates: pd.Series, s: int) -> i
     ---------
     x : pd.Timestamp
         File creationdate.
-    dates : pandas.Series
+    dates : pd.Series
         List of file creation dates.
     s: int
         Time interval in minutes.
@@ -79,13 +166,13 @@ def path_depth(data: pd.DataFrame, column: str) -> pd.DataFrame:
 
     Arguments:
     ---------
-    data : DataFrame
+    data : pd.DataFrame
     column : str
        Column name containing the PureWindowsPath of the files.
 
     Returns:
     -------
-    data : DataFrame
+    data : pd.DataFrame
        The DataFrame with the new column.
 
     """
@@ -118,10 +205,12 @@ def attributes_processing(data: pd.DataFrame) -> np.ndarray:
 
 
 class NTFSPE:
+    """NTFSPE class."""
     def __init__(
         self,
-        ntfs_file: Path,
+        ntfs_df: pd.DataFrame,
         time_windows: int = 6,
+        volume: Optional[str] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ):
@@ -130,89 +219,36 @@ class NTFSPE:
 
         Arguments:
         ---------
-        ntfs_file :
-            NTFSInfo csv file path.
-        time_windows: int, default=6
+        ntfs_df : pd.DataFrame
+            NTFSInfo DataFrame.
+        time_windows : int, default=6
             Time window in months from the most recent file creation.
+        volume : str
+            NTFSInfo volume name
         start_date : str
             Start date if specified.
         end_date : str
             End date if specified
 
         """
-        self.data = pd.read_csv(
-            ntfs_file,
-            usecols=[
-                "ComputerName",
-                "VolumeID",
-                "File",
-                "ParentName",
-                "Extension",
-                "SizeInBytes",
-                "Attributes",
-                "CreationDate",
-                "LastModificationDate",
-                "LastAccessDate",
-                "LastAttrChangeDate",
-                "FileNameCreationDate",
-                "FileNameLastModificationDate",
-                "FileNameLastAccessDate",
-                "FileNameLastAttrModificationDate",
-                "RecordInUse",
-                "SHA1",
-                "Version",
-                "OriginalFileName",
-                "Platform",
-                "TimeStamp",
-                "SubSystem",
-                "FileType",
-                "FileOS",
-                "FilenameFlags",
-                "PeSHA1",
-                "PeSHA256",
-                "AuthenticodeStatus",
-                "AuthenticodeSigner",
-                "AuthenticodeSignerThumbprint",
-                "AuthenticodeCA",
-                "AuthenticodeCAThumbprint",
-                "PeMD5",
-                "SnapshotID",
-                "SignedHash"
-            ],
-            header=0,
-            low_memory=False,
-            na_values="",
-            keep_default_na=False,
-        )
+        self.data = ntfs_df
+        if self.data.shape[0] == 0:
+            logging.warning("Empty NTFSInfo")
+            return
         self.data.FileNameCreationDate = pd.to_datetime(
             self.data.FileNameCreationDate, utc=True)
-        self.data = self.data.sort_values(by="FileNameCreationDate")
-        # Time window filtering
-        date_format = "%Y-%m-%d"
-        if end_date is None:
-            end_date = self.data.FileNameCreationDate.max()
-        else:
-            end_date = datetime.strptime(
-                end_date, date_format
-            ).replace(tzinfo=timezone.utc)
-        if start_date is None:
-            date = datetime.now(timezone.utc)
-            if end_date > date:  # Manage inconsistent dates
-                start_date = date - relativedelta(months=time_windows)
-                logging.warning(
-                    "%d files have inconsistent dates (future dates)",
-                    sum(self.data.FileNameCreationDate > date),
-                )
-            else:
-                start_date = end_date - relativedelta(months=time_windows)
-        else:
-            start_date = datetime.strptime(
-                start_date, date_format
-            ).replace(tzinfo=timezone.utc)
-        logging.info("Time window selected: %s - %s", start_date, end_date)
-        boolean = self.data.FileNameCreationDate >= start_date
-        self.data = self.data[boolean].copy()
-        self.data_preprocessing()
+        start_date, end_date = time_window_management(
+            self.data, time_windows, start_date, end_date
+        )
+        self.data = self.data[
+            (self.data.FileNameCreationDate >= start_date)
+            & (self.data.FileNameCreationDate <= end_date)
+        ]
+        self.data_filtering()
+        self.data_preprocessing(volume)
+        if self.data.shape[0] == 0:
+            logging.warning("No PE files found in this time window")
+            return
         self.data = self.data.assign(
             Analysis=False,
             Isolated=False,
@@ -230,8 +266,8 @@ class NTFSPE:
         self.data_processing()
         self.graph = SimpleFileGraph(self.data.FullPath.copy())
 
-    def data_preprocessing(self) -> None:
-        """Filtering and attribute enrichment."""
+    def data_filtering(self) -> None:
+        """Filtering on PE files."""
         # Delete files with FilenameFlags = 2
         boolFlags = self.data["FilenameFlags"] != 2
         self.data = self.data[boolFlags].copy()
@@ -245,11 +281,20 @@ class NTFSPE:
         self.data = self.data[boolArr].copy()
         # Sort by FileNameCreationDate
         self.data = self.data.sort_values(by=["FileNameCreationDate"])
-        # Add new attributes
-        self.data = fullpath_creation(self.data)
+
+    def data_preprocessing(self, volume: str) -> None:
+        """Add new attributes."""
+        self.data = fullpath_creation(self.data, volume)
         self.data["FilesCreatedAtSameTime"] = self.data.FileNameCreationDate.apply(
             lambda x: nbfiles_created_at_same_time(x, self.data.FileNameCreationDate, 1)
         )
+        # Remove exclude files in config.py
+        for attr, value in EXCLUDED_FILES.items():
+            self.data[attr] = self.data[attr].astype(str)
+            indexes = self.data.index[
+                self.data[attr].str.lower() == value.lower()
+            ].to_list()
+            self.data = self.data.drop(indexes)
 
     def data_processing(self) -> None:
         """Processes data for algorithms."""
@@ -426,3 +471,26 @@ class NTFSPE:
         h = self.graph.coarsened_tree(min_proportion=0.05)
         H = h.draw(displayed_files=outliers_dict, filename=filename)
         return H
+
+    def delete_authenticode_status_class(self, authenticode_class: str) -> None:
+        """Deletes the files of the AuthenticodeStatus class."""
+        if authenticode_class in self.data.AuthenticodeStatus.unique():
+            self.data = self.data[
+                self.data.AuthenticodeStatus != authenticode_class
+            ].copy()
+            self.process_data = self.process_data[
+                self.process_data.AuthenticodeStatus != authenticode_class
+            ].copy()
+
+
+def read_ntfs_from_csv(ntfs_file: Path) -> pd.DataFrame:
+    """Create a DataFrame from a CSV file."""
+    ntfs = pd.read_csv(
+        ntfs_file,
+        usecols=col_list,
+        header=0,
+        low_memory=False,
+        na_values="",
+        keep_default_na=False,
+    )
+    return ntfs

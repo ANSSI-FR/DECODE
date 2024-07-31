@@ -17,6 +17,7 @@ CHAR_COLON = "&#58;"
 CHAR_LT = "&#60;"
 CHAR_GT = "&#62;"
 CHAR_AND = "&#38;"
+CHAR_BACKSLASH = "&#92"
 
 
 def escape_special_characters(content: str) -> str:
@@ -37,6 +38,7 @@ def escape_special_characters(content: str) -> str:
     """
     return (
         content.replace("&", CHAR_AND)
+        .replace("\\", CHAR_BACKSLASH)
         .replace(":", CHAR_COLON)
         .replace("<", CHAR_LT)
         .replace(">", CHAR_GT)
@@ -366,6 +368,9 @@ class SimpleFileGraph(nx.DiGraph):
                 name = PureWindowsPath(d).parts[-1]
                 if name == "\\":
                     name = "ROOT"
+                # Case of C:\
+                elif name.endswith("\\"):
+                    name = name[:-1]
             else:
                 # If d represents merged directories in a coarsened
                 # file tree, use its 'name' attribute

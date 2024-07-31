@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import NoReturn, Optional, Sequence
 
-from .core import analyse, DEFAULT_CSV_OUTPUT, DEFAULT_PDF_OUTPUT
+from .core import DEFAULT_CSV_OUTPUT, DEFAULT_PDF_OUTPUT, analyse
 from .info import __copyright__, __description__, __issues__, __version__
 
 
@@ -102,23 +102,29 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--csv_output",
-        metavar="FILE",
+        metavar="STRING",
         type=str,
-        help="""path to the CSV output""",
+        help="""path to the results output (CSV document)""",
         default=DEFAULT_CSV_OUTPUT,
     )
     parser.add_argument(
         "--pdf_output",
-        metavar="FILE",
+        metavar="STRING",
         type=str,
-        help="""path to the PDF output""",
+        help="""path to the visualization output (PDF document)""",
         default=DEFAULT_PDF_OUTPUT,
     )
     parser.add_argument(
         "ntfs_file",
         metavar="FILE",
         type=existing_file,
-        help="""NTFSInfo File to process""",
+        help="""NTFSInfo file to process""",
+    )
+    parser.add_argument(
+        "--dlls_file",
+        metavar="FILE",
+        type=existing_file,
+        help="""ListDLLs file to process""",
     )
     parser.add_argument(
         "--start_date",
@@ -134,22 +140,8 @@ def get_parser() -> argparse.ArgumentParser:
         "--time_window",
         metavar="INT",
         type=int,
-        help="""time window in months from the most recent file creation""",
+        help="""time window (in months) preceding the last date identified to consider""",
         default=6,
-    )
-    parser.add_argument(
-        "--min_files",
-        metavar="INT",
-        type=int,
-        help="""minimum number of files required to start the analysis""",
-        default=10,
-    )
-    parser.add_argument(
-        "--contamination",
-        metavar="FLOAT",
-        type=float,
-        help="""proportion of outliers""",
-        default=0.02,
     )
     return parser
 
@@ -163,11 +155,10 @@ def entrypoint(argv: Optional[Sequence[str]] = None) -> None:
 
         analyse(
             args.ntfs_file,
+            list_dlls_file=args.dlls_file,
             time_windows=args.time_window,
             start_date=args.start_date,
             end_date=args.end_date,
-            contamination=args.contamination,
-            min_file=args.min_files,
             output_csv=args.csv_output,
             output_pdf=args.pdf_output,
         )
