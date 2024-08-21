@@ -74,6 +74,8 @@ def read_list_dlls_from_txt(dlls_file: Path) -> ListDlls:
 
                 # extraction of module information
                 module_base = mod_line.split(" ")[0]
+                if not module_base.startswith("0x"):
+                    break
                 mod_line = mod_line[len(module_base):].lstrip()
                 module_size = mod_line.split(" ")[0]
                 module = mod_line[len(module_size):].lstrip().rstrip()
