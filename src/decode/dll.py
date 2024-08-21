@@ -28,7 +28,7 @@ def read_list_dlls_from_txt(dlls_file: Path) -> ListDlls:
         Path of the ListDLLs txt file.
     """
     data_list = []
-    with Path.open(dlls_file) as fp:
+    with Path.open(dlls_file, mode="r", encoding="iso8859") as fp:
         # skip file header
         for line in fp:
             if line.startswith("----------"):
