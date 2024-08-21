@@ -8,7 +8,7 @@ import graphviz
 import pandas as pd
 
 from .config import CONTAMINATION, MIN_FILE
-from .dll import read_list_dlls_from_json, read_list_dlls_from_txt
+from .dll import read_list_dlls_from_txt
 from .ntfs_pe import NTFSPE, read_ntfs_from_csv
 
 
@@ -42,10 +42,7 @@ def add_list_dlls(ntfs: NTFSPE, list_dlls_file: Path) -> NTFSPE:
     ntfs: NTFSPE
     list_dlls_file: Path.
     """
-    if list_dlls_file.suffix.lower() == ".json":
-        list_dlls = read_list_dlls_from_json(list_dlls_file)
-    elif list_dlls_file.suffix.lower() == ".txt":
-        list_dlls = read_list_dlls_from_txt(list_dlls_file)
+    list_dlls = read_list_dlls_from_txt(list_dlls_file)
     if list_dlls and not list_dlls.data.empty:
         in_list_dlls = ntfs.data.FullPath.isin(
             list_dlls.data[list_dlls.data.warning].path.unique()

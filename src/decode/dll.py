@@ -1,6 +1,6 @@
 """ListDLLs class."""
 
-from pathlib import Path, PureWindowsPath
+from pathlib import Path
 
 import pandas as pd
 
@@ -17,37 +17,6 @@ class ListDlls:
     def __init__(self, data: pd.DataFrame) -> None:
         """Initialize a ListDLLs processing."""
         self.data = data
-
-
-def read_list_dlls_from_json(dlls_file: Path) -> ListDlls:
-    """Process ListDLLs result from improved (JSON file) output.
-
-    Attributes:
-    ----------
-    dlls_file : Path
-        Path of the ListDLLs json file.
-    """
-    list_dlls_df = pd.read_json(dlls_file, lines=True)
-    list_dlls_df = list_dlls_df.rename(
-        columns={
-            "exec_name:file_name": "exec_name",
-            "exec_pid:process_id": "process_id",
-        },
-    )
-    list_dlls_df = list_dlls_df.set_index(
-        ["exec_name", "process_id", "cmdline"],
-    )
-    list_dlls_df = pd.Series(list_dlls_df.dlls).explode().apply(pd.Series).reset_index()
-    list_dlls_df = list_dlls_df.rename(
-        columns={"size:file_size": "size", "path:file_path": "path"},
-    )
-    list_dlls_df["warning"] = list_dlls_df.warning_message.notna()
-    list_dlls_df = list_dlls_df.drop("warning_message", axis=1)
-    list_dlls_df["path"] = [
-        PureWindowsPath(x) for x in list_dlls_df.path
-    ]
-    list_dlls = ListDlls(list_dlls_df.copy())
-    return list_dlls
 
 
 def read_list_dlls_from_txt(dlls_file: Path) -> ListDlls:
