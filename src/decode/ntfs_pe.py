@@ -116,7 +116,10 @@ def _replace_value(data: pd.DataFrame, column_name: str) -> pd.DataFrame:
     return data
 
 
-def fullpath_creation(data: pd.DataFrame, volume: Optional[str]) -> pd.DataFrame:
+def fullpath_creation(
+    data: pd.DataFrame,
+    volume: Optional[str]
+) -> pd.DataFrame:
     """Transform paths into PureWindowsPath type."""
     data["FullPath"] = [
         PureWindowsPath(x, y) for x, y in zip(data["ParentName"], data["File"])
@@ -352,8 +355,8 @@ class NTFSPE:
             The estimated degree of outliers in the dataset.
 
         """
-        x = self.process_data.loc[index,].copy()
-        data = self.data.loc[index,].copy()
+        x = self.process_data.loc[index, ].copy()
+        data = self.data.loc[index, ].copy()
         x = x.drop(columns="AuthenticodeStatus")
         # PATH anomaly detection
         graph = SimpleFileGraph(data["FullPath"].copy())
@@ -406,8 +409,9 @@ class NTFSPE:
                 self.data.loc[index, "final_score"] = 1
             # NotSigned and SignedVerified files
             elif status in ["NotSigned", "SignedVerified"]:
-                if self.data.loc[index,].shape[0] < min_file:
-                    logging.warning("%s: Not enough file to start the analysis", status)
+                if self.data.loc[index, ].shape[0] < min_file:
+                    logging.warning("%s: Not enough file to start the analysis",
+                                    status)
                     self.data.loc[index, "final_score"] = 1
                 else:
                     self.data.loc[index, "Analysis"] = True
@@ -459,7 +463,8 @@ class NTFSPE:
             if (isinstance(y, bool) and y is True)
         ]
         min_files_outliers = [
-            x for x, y in zip(first_outliers.FullPath, first_outliers.Analysis) if not y
+            x for x, y in zip(first_outliers.FullPath, first_outliers.Analysis)
+            if not y
         ]
         outliers_dict = {
             "P": path_outliers,
@@ -472,7 +477,9 @@ class NTFSPE:
         H = h.draw(displayed_files=outliers_dict, filename=filename)
         return H
 
-    def delete_authenticode_status_class(self, authenticode_class: str) -> None:
+    def delete_authenticode_status_class(
+        self, authenticode_class: str
+    ) -> None:
         """Deletes the files of the AuthenticodeStatus class."""
         if authenticode_class in self.data.AuthenticodeStatus.unique():
             self.data = self.data[

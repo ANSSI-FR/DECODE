@@ -1,10 +1,12 @@
 """Provides the main functions to detect abnormal PE in a NTFSInfo file."""
 
 import logging
+import re
 from pathlib import Path
 from typing import Optional
 
 import graphviz
+import numpy as np
 import pandas as pd
 
 from .config import CONTAMINATION, MIN_FILE
@@ -24,12 +26,21 @@ def search_volume_info(ntfs_file: Path) -> pd.Series:
     ----------
     ntfs_file: Path
     """
-    file_name = "volstats.csv"
-    for file in ntfs_file.parent.iterdir():
-        if (file.is_file() and file.name == file_name):
-            volstats = pd.read_csv(file)
-            if (pd.Series(["FileInfo", "MountPoint"]).isin(volstats.columns).all()):
-                return volstats[volstats.FileInfo == ntfs_file.name]["MountPoint"].item()
+    ntfsinfo_filename = re.sub(r"\.gz$", "", ntfs_file.name)
+    volstat_file = ntfs_file.parent / "volstats.csv"
+    if volstat_file.is_file():
+        volstats = pd.read_csv(volstat_file)
+        if (pd.Series(
+            ["FileInfo", "MountPoint"]
+        ).isin(volstats.columns).all()):
+            for _, row in volstats.iterrows():
+                if isinstance(row["FileInfo"], str) and ntfsinfo_filename in row["FileInfo"]:
+                    logging.info("Volume info: %s", row["MountPoint"])
+                    return row["MountPoint"]
+        else:
+            logging.debug("%s not in volstat.csv",
+                          ([i for i in ["FileInfo", "MountPoint"]
+                            if i not in volstats.columns]))
     return None
 
 
@@ -47,9 +58,11 @@ def add_list_dlls(ntfs: NTFSPE, list_dlls_file: Path) -> NTFSPE:
         in_list_dlls = ntfs.data.FullPath.isin(
             list_dlls.data[list_dlls.data.warning].path.unique()
         )
-        ntfs.data["WarningInListDLLs"] = 0
         ntfs.data["WarningInListDLLs"] = in_list_dlls
         ntfs.process_data["WarningInListDLLs"] = in_list_dlls
+        logging.debug("ListDlls file processing")
+        logging.debug("Number of warning found in ListDlls: %d",
+                      sum(in_list_dlls) if (sum(in_list_dlls) > 0) else 0)
     return ntfs
 
 
@@ -110,7 +123,8 @@ def analyse(
     )
     logging.debug("File count: %d", ntfs.data.shape[0])
     if ntfs.data.shape[0] != 0:
-        # If ListDLLs file was passed
+        # ListDLLs
+        ntfs.data["WarningInListDLLs"] = np.nan
         if list_dlls_file:
             ntfs = add_list_dlls(ntfs, list_dlls_file)
         # Not enough files to start analysis

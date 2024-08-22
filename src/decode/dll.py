@@ -1,6 +1,6 @@
 """ListDLLs class."""
 
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pandas as pd
 
@@ -94,4 +94,5 @@ def read_list_dlls_from_txt(dlls_file: Path) -> ListDlls:
                 )
                 warning_message = ""
     list_dlls = ListDlls(pd.DataFrame(data_list))
+    list_dlls.data["path"] = [PureWindowsPath(x) for x in list_dlls.data.path]
     return list_dlls
