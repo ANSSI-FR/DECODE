@@ -1,4 +1,4 @@
-<form version="1.1">
+<form version="1.2">
   <label>DECODE</label>
   <description>Analysis of DECODE results</description>
   <fieldset submitButton="true" autoRun="false">
@@ -71,9 +71,10 @@
         <format type="color" field="Analysis">
           <colorPalette type="map">{"False": #BA4A00}</colorPalette>
         </format>
-        <fields>["ParentName","File","FileNameCreationDate","final_score","Features","Path","Isolated","Analysis","SHA1"]</fields>
+        <fields>["host","FullPath","FileNameCreationDate","final_score","Features","Path","Isolated","WarningInListDLLs","Analysis","SHA1"]</fields>
         <drilldown>
           <set token="fileName">$row.File$</set>
+          <set token="hostName">$row.host$</set>
           <link>#context_view</link>
         </drilldown>
       </table>
@@ -87,9 +88,10 @@
         <format type="color" field="Analysis">
           <colorPalette type="map">{"False": #BA4A00}</colorPalette>
         </format>
-        <fields>["ParentName","File","FileNameCreationDate","final_score","Features","Path","Isolated","Analysis","SHA1"]</fields>
+        <fields>["host","FullPath","FileNameCreationDate","final_score","Features","Path","Isolated","WarningInListDLLs","Analysis","SHA1"]</fields>
         <drilldown>
           <set token="fileName">$row.File$</set>
+          <set token="hostName">$row.host$</set>
           <link>#context_view</link>
         </drilldown>
       </table>
@@ -103,9 +105,10 @@
         <format type="color" field="Analysis">
           <colorPalette type="map">{"False": #BA4A00}</colorPalette>
         </format>
-        <fields>["ParentName","File","FileNameCreationDate","final_score","Features","Path","Isolated","Analysis","SHA1"]</fields>
+        <fields>["host","FullPath","FileNameCreationDate","final_score","Features","Path","Isolated","WarningInListDLLs","Analysis","SHA1"]</fields>
         <drilldown>
           <set token="fileName">$row.File$</set>
+          <set token="hostName">$row.host$</set>
           <link>#context_view</link>
         </drilldown>
       </table>
@@ -141,7 +144,7 @@
       <table>
         <title>Current search : $fileName$</title>
         <search>
-          <query>index=$index_token$ sourcetype=$sourcetype_token$ $fileName$ | localize timebefore=$span_value$$span_unit$ timeafter=$span_value$$span_unit$ | map search="search index=$index_token$ sourcetype=$sourcetype_token$ earliest=$$starttime$$ latest=$$endtime$$" | sort _time</query>
+          <query>index=$index_token$ host=$hostName$ sourcetype=$sourcetype_token$ $fileName$ | localize timebefore=$span_value$$span_unit$ timeafter=$span_value$$span_unit$ | map search="search index=$index_token$ host=$hostName$ sourcetype=$sourcetype_token$ earliest=$$starttime$$ latest=$$endtime$$" | sort _time</query>
         </search>
         <option name="count">30</option>
         <option name="drilldown">none</option>
