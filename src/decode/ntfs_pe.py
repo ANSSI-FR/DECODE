@@ -441,9 +441,10 @@ class NTFSPE:
             file tree with the most abnormal files detected.
 
         """
-        first_outliers = self.data.sort_values(by="final_score", ascending=False)[
-            :max_files
-        ].copy()
+        first_outliers = self.data.sort_values(
+            by="final_score",
+            ascending=False
+        )[:max_files].copy()
         logging.info(
             "Number of files displayed on the diagram: %d", len(first_outliers)
         )
@@ -474,7 +475,11 @@ class NTFSPE:
         }
         # Summarized view of the tree structure
         h = self.graph.coarsened_tree(min_proportion=0.05)
-        H = h.draw(displayed_files=outliers_dict, filename=filename)
+        H = h.draw(
+            displayed_files=outliers_dict,
+            max_displayed_files=max_files,
+            filename=filename
+        )
         return H
 
     def delete_authenticode_status_class(
