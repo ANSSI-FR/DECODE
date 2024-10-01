@@ -67,8 +67,11 @@ machine_analysis NTFSInfo.csv --csv_output Results_data.csv  --pdf_output file_t
 ```
 
 Some parameters can be modified in the src/decode/config.py file:
+
 * CONTAMINATION (float): proportion of outliers (0.02 by default). The top-n files in the anomaly ranking are flagged as outliers, where n equals contamination * (total number of files);
+
 * MIN_FILE (int): minimum number of files required to start the analysis, by default set to 10. If the number of files is lower, the algorithms are not launched and all the files are reported with the maximum abnormality score of 1;
+
 * EXCLUDED_FILES: files to filter before analysis.
 
 **How to generate `NTFSInfo.csv` and `Listdlls.txt` files ?**  

@@ -124,7 +124,7 @@ def fullpath_creation(
     data["FullPath"] = [
         PureWindowsPath(x, y) for x, y in zip(data["ParentName"], data["File"])
     ]
-    if volume:
+    if volume and not(pd.isna(volume)):
         data["FullPath"] = [
             PureWindowsPath(volume).joinpath(x) for x in data["FullPath"]
         ]
@@ -287,6 +287,10 @@ class NTFSPE:
 
     def data_preprocessing(self, volume: str) -> None:
         """Add new attributes."""
+        if volume:
+            self.data["VolumeInfo"] = volume
+        else:
+            self.data["VolumeInfo"] = np.nan
         self.data = fullpath_creation(self.data, volume)
         self.data["FilesCreatedAtSameTime"] = self.data.FileNameCreationDate.apply(
             lambda x: nbfiles_created_at_same_time(x, self.data.FileNameCreationDate, 1)
@@ -309,7 +313,6 @@ class NTFSPE:
                 "Platform",
                 "FileType",
                 "FileOS",
-                "PeSHA1",
                 "AuthenticodeStatus",
                 "AuthenticodeSignerThumbprint",
                 "AuthenticodeCAThumbprint",
@@ -322,7 +325,6 @@ class NTFSPE:
         self.process_data["FilesCreatedAtSameTime"] = self.process_data[
             "FilesCreatedAtSameTime"
         ].apply(lambda x: 1 / x)
-        _replace_value(self.process_data, "PeSHA1")
         _replace_value(self.process_data, "SignedHash")
         _replace_value(self.process_data, "AuthenticodeSignerThumbprint")
         _replace_value(self.process_data, "AuthenticodeCAThumbprint")
@@ -474,7 +476,10 @@ class NTFSPE:
             "X": min_files_outliers,
         }
         # Summarized view of the tree structure
-        h = self.graph.coarsened_tree(min_proportion=0.05)
+        h = self.graph.coarsened_tree(
+            min_proportion=0.05,
+            file_subset=first_outliers.FullPath
+        )
         H = h.draw(
             displayed_files=outliers_dict,
             max_displayed_files=max_files,

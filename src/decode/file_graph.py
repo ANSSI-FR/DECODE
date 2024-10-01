@@ -96,7 +96,12 @@ class SimpleFileGraph(nx.DiGraph):
                 ]
                 self.add_edges_from(to_add)
 
-    def coarsened_tree(self, max_nodes: int = 40, min_proportion: float = 0) -> Self:
+    def coarsened_tree(
+        self,
+        max_nodes: int = 40,
+        min_proportion: float = 0,
+        file_subset: Optional[list] = None
+    ) -> Self:
         """Returns a new instance of SimpleFileGraph containing the same
         files as `self` but with less directories.
         The remaining directories are selected using a simple greedy
@@ -129,6 +134,14 @@ class SimpleFileGraph(nx.DiGraph):
             of descendent files of the parent directory are added.
             The other child directories are merged and added as a
             single node.
+        file_subset : list, default=None
+            Subset of files from `self` that should be prioritized
+            when adding subdirectories to the coarsened tree.
+            Specifically, the instead of considering the total number
+            of descendent files when choosing the leaf of the current
+            coarsened tree whose children should be added, only the
+            files belonging to `file_subset` are accounted for.
+            If None, all files are equally important.
 
         Returns:
         -------
@@ -139,6 +152,10 @@ class SimpleFileGraph(nx.DiGraph):
         coarsened = SimpleFileGraph()
         root = self.get_root()
         coarsened.add_node(root, **self.nodes[root])
+        if file_subset is not None:
+            subtree = SimpleFileGraph(pd.Series(file_subset))
+        else:
+            subtree = None
         # Select the directories that will be added to the coarsened
         # tree
         while coarsened.number_of_nodes() < max_nodes:
@@ -164,7 +181,7 @@ class SimpleFileGraph(nx.DiGraph):
             # the one whose subdirectories will be added to the
             # coarsened tree
             scores = {
-                leaf: self._leaf_priority_score(leaf, min_proportion)
+                leaf: self._leaf_priority_score(leaf, min_proportion, subtree)
                 for leaf in leaves
             }
             # Select the candidate directory with the highest score
@@ -177,12 +194,21 @@ class SimpleFileGraph(nx.DiGraph):
                 for d in self.get_children(best_leaf)
                 if self.is_dir(d)
             ]
-            thresh = min_proportion * sum(
-                self.num_descendent_files(c) for c in children
-            )
+            if subtree is None or subtree.has_node(best_leaf):
+                tree = self if subtree is None else subtree
+                thresh = min_proportion * sum(
+                    tree.num_descendent_files(c)
+                    if tree.has_node(c) else 0
+                    for c in children
+                )
+            else:
+                # If best_leaf is not in the subtree containing the selected
+                # files, then no remaining leaf with subdirectories has
+                # selected files among its descendents, thus we can stop here
+                break
             hidden = []
             for c in children:
-                if self.num_descendent_files(c) >= thresh:
+                if tree.has_node(c) and tree.num_descendent_files(c) >= thresh:
                     # If the subdirectory has enough descendent files,
                     # add it to the coarsened tree
                     coarsened.add_node(c, **self.nodes[c])
@@ -238,7 +264,7 @@ class SimpleFileGraph(nx.DiGraph):
         displayed_files: Optional[Union[list, dict]] = None,
         class_colors: Optional[Union[list, dict]] = None,
         displayed_file_color: str = "red",
-        max_displayed_files: int = 25,
+        max_displayed_files: int = 35,
         max_name_length: int = 25,
         display_full_path: bool = True,
         filename: Optional[str] = None,
@@ -732,7 +758,7 @@ class SimpleFileGraph(nx.DiGraph):
         return scores_dict, outliers
 
     def _leaf_priority_score(
-        self, leaf: str, min_proportion: float
+        self, leaf: str, min_proportion: float, subtree: Optional[Self] = None
     ) -> float:
         """Scoring function for the tree coarsening algorithm.
 
@@ -744,6 +770,11 @@ class SimpleFileGraph(nx.DiGraph):
             Minimum proportion of the total number of descendent files
             that must be descendents of a child directory for it to be
             added to the coarsened tree.
+        subtree : SimpleFileGraph
+            Subtree of the current tree containing the files used for
+            calculating the leaf priority score.
+            Used to make the tree coarsening algorithm add more details
+            around some specified files.
 
         Returns:
         -------
@@ -751,12 +782,18 @@ class SimpleFileGraph(nx.DiGraph):
             Priority score of the leaf.
 
         """
+        if subtree is None:
+            tree = self
+        elif not subtree.has_node(leaf):
+            return 0
+        else:
+            tree = subtree
         # Compute the total number of descendent files of the
         # subdirectories of the current directory
-        num_files = self.num_descendent_files(leaf) - len([
+        num_files = tree.num_descendent_files(leaf) - len([
             n
-            for n in self.get_children(leaf)
-            if self.is_file(n)
+            for n in tree.get_children(leaf)
+            if tree.is_file(n)
         ])
         # Get all subdirectories of the current directory
         children = [
@@ -767,7 +804,10 @@ class SimpleFileGraph(nx.DiGraph):
         # enough descendent files
         num_hidden_dirs = 0
         for d in children:
-            if self.num_descendent_files(d) < min_proportion * num_files:
+            if (
+                not tree.has_node(d)
+                or tree.num_descendent_files(d) < min_proportion * num_files
+            ):
                 num_hidden_dirs += 1
         # Compute the number of new nodes that would be added
         # to the coarsened tree: number of subdirectories minus

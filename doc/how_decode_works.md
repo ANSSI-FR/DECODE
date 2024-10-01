@@ -134,7 +134,6 @@ The metadata considered are as follows:
   * `Platform` : categorical ;
   * `FileType` : boolean ;
   * `FileOS` : boolean ;
-  * `PeSHA1` : boolean ;
   * `AuthenticodeStatus` : categorical ;
   * `AuthenticodeSignerThumbprint` : boolean ;
   * `AuthenticodeCAThumbprint` : boolean ;

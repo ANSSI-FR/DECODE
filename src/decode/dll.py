@@ -33,6 +33,9 @@ def read_list_dlls_from_txt(dlls_file: Path) -> ListDlls:
         for line in fp:
             if line.startswith("----------"):
                 break
+        else:
+            # empty or bogus file
+            return data_list
 
         line_to_analyse = True  # True until the EoF
         while line_to_analyse:
@@ -94,5 +97,7 @@ def read_list_dlls_from_txt(dlls_file: Path) -> ListDlls:
                 )
                 warning_message = ""
     list_dlls = ListDlls(pd.DataFrame(data_list))
-    list_dlls.data["path"] = [PureWindowsPath(x) for x in list_dlls.data.path]
+    list_dlls.data["path"] = [
+        PureWindowsPath(x) for x in list_dlls.data.path
+    ]
     return list_dlls
