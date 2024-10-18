@@ -31,13 +31,19 @@ For example with Debian/ubuntu:
 ```
 apt install graphviz
 ```
+To install DECODE:
+```
+git clone https://github.com/ANSSI-FR/DECODE.git
+cd DECODE
+pip install .
+```
 
 ## Usage
 
 To start the analysis:
 
 ```bash
-machine_analysis NTFSInfo_FILE --csv_output Results_data.csv
+machine_analysis NTFSInfo_FILE --csv_output Results_data.csv --pdf_output file_tree.pdf
 ```
 
 * NTFSInfo_FILE: NTFSInfo file collected by DFIR-ORC in csv format;

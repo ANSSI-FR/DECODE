@@ -3,8 +3,8 @@
 
 The `dataset/` folder provides a sample of a use case to easily test the tool.
 
-DFIR-ORC was launched on a compromised system and the following files were extracted from the ORC archive: 
-* NTFSInfo.csv ("C:\" volume)
+DFIR-ORC was launched on a compromised system and the following files were extracted from the ORC archives:
+* NTFSInfo_00000000_DiskInterface_0x94303d7b303d6600_.csv.gz ("C:\" volume)
 * volstats.csv
 * ListDlls.txt
 
