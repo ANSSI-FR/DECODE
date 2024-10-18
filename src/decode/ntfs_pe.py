@@ -238,6 +238,7 @@ class NTFSPE:
         if self.data.shape[0] == 0:
             logging.warning("Empty NTFSInfo")
             return
+        self.data_filtering()
         self.data.FileNameCreationDate = pd.to_datetime(
             self.data.FileNameCreationDate, utc=True)
         start_date, end_date = time_window_management(
@@ -247,7 +248,6 @@ class NTFSPE:
             (self.data.FileNameCreationDate >= start_date)
             & (self.data.FileNameCreationDate <= end_date)
         ]
-        self.data_filtering()
         self.data_preprocessing(volume)
         if self.data.shape[0] == 0:
             logging.warning("No PE files found in this time window")
