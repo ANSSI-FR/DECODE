@@ -28,3 +28,12 @@ sourcetype = anssi:decode
 index = ##INDEX_NAME##
 crcSalt = <SOURCE>
 ```
+
+## Context view
+
+The contextual view of the dashboard allows the user to view the occurrences of a selected file in a timeline. It allows to quickly see what happened on the machine around these events.
+
+This timeline can be selected by the user in the `Timeline sourcetype` drop-down menu.  
+Once the timeline is selected, simply click on a file of interest and the "context" view is updated. The file occurrences are colored red for greater visibility.
+
+To generate this timeline you can use the [orc2timeline](https://github.com/ANSSI-FR/orc2timeline) tool developed by ANSSI.
