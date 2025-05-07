@@ -122,9 +122,9 @@ def fullpath_creation(
 ) -> pd.DataFrame:
     """Transform paths into PureWindowsPath type."""
     data["FullPath"] = [
-        PureWindowsPath(x, y) for x, y in zip(data["ParentName"], data["File"])
+        PureWindowsPath(x, y) for x, y in zip(data["ParentName"].fillna("\\"), data["File"])
     ]
-    if volume and not(pd.isna(volume)):
+    if volume and not (pd.isna(volume)):
         data["FullPath"] = [
             PureWindowsPath(volume).joinpath(x) for x in data["FullPath"]
         ]
