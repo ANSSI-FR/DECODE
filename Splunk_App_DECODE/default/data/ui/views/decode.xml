@@ -7,7 +7,12 @@
       <fieldForLabel>index</fieldForLabel>
       <fieldForValue>index</fieldForValue>
       <search>
-        <query>| tstats count where index=* by index</query>
+        <query>| rest /services/data/indexes datatype=event
+| search NOT title="_*"
+| stats count by title
+| fields title
+| rename title AS index
+        </query>
         <earliest>0</earliest>
         <latest></latest>
       </search>
