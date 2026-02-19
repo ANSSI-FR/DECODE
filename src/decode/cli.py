@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import NoReturn, Optional, Sequence
 
-from .core import DEFAULT_CSV_OUTPUT, DEFAULT_PDF_OUTPUT, analyse
+from .core import DEFAULT_CSV_OUTPUT, DEFAULT_PDF_OUTPUT, analyse, prepare_orc
 from .info import __copyright__, __description__, __issues__, __version__
 
 
@@ -115,10 +115,10 @@ def get_parser() -> argparse.ArgumentParser:
         default=DEFAULT_PDF_OUTPUT,
     )
     parser.add_argument(
-        "ntfs_file",
+        "file_to_process",
         metavar="FILE",
         type=existing_file,
-        help="""NTFSInfo file to process""",
+        help="""NTFSInfo file OR DFIR-Orc archive to process""",
     )
     parser.add_argument(
         "--dlls_file",
@@ -153,16 +153,27 @@ def entrypoint(argv: Optional[Sequence[str]] = None) -> None:
         args = parser.parse_args(argv)
         setup_logging(args.log_file, args.log_level)
 
-        analyse(
-            args.ntfs_file,
-            list_dlls_file=args.dlls_file,
-            time_windows=args.time_window,
-            start_date=args.start_date,
-            end_date=args.end_date,
-            output_csv=args.csv_output,
-            output_pdf=args.pdf_output,
-        )
-    except Exception as err:  # NoQA: BLE001
+        if args.file_to_process.suffix == ".7z":
+            prepare_orc(
+                args.file_to_process,
+                list_dlls_file=args.dlls_file,
+                time_windows=args.time_window,
+                start_date=args.start_date,
+                end_date=args.end_date,
+                output_csv=args.csv_output,
+                output_pdf=args.pdf_output,
+            )
+        else:
+            analyse(
+                args.ntfs_file,
+                list_dlls_file=args.dlls_file,
+                time_windows=args.time_window,
+                start_date=args.start_date,
+                end_date=args.end_date,
+                output_csv=args.csv_output,
+                output_pdf=args.pdf_output,
+            )
+    except Exception as err:
         logger.critical("Unexpected error", stack_info=True, exc_info=err)
         logger.critical("Please report this error to : %s", __issues__)
         sys.exit(1)

@@ -1,7 +1,7 @@
 """Main module."""
 
 from .cli import entrypoint
-from .core import analyse
+from .core import analyse, prepare_orc
 from .info import (
     __author__,
     __copyright__,
@@ -15,8 +15,6 @@ from .info import (
 
 
 __all__ = [
-    "entrypoint",
-    "analyse",
     "__author__",
     "__copyright__",
     "__description__",
@@ -25,4 +23,7 @@ __all__ = [
     "__maintainer__",
     "__project__",
     "__version__",
+    "analyse",
+    "entrypoint",
+    "prepare_orc",
 ]
