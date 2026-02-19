@@ -1,4 +1,4 @@
-<form version="1.2">
+<form version="1.3">
   <label>DECODE</label>
   <description>Analysis of DECODE results</description>
   <fieldset submitButton="true" autoRun="false">
@@ -80,7 +80,8 @@
         <drilldown>
           <set token="fileName">$row.File$</set>
           <set token="hostName">$row.host$</set>
-          <link>#context_view</link>
+          <set token="fullPath">$row.FullPath$</set>
+          <link>#files_creation_in_the_timewindow</link>
         </drilldown>
       </table>
       <table>
@@ -97,7 +98,8 @@
         <drilldown>
           <set token="fileName">$row.File$</set>
           <set token="hostName">$row.host$</set>
-          <link>#context_view</link>
+          <set token="fullPath">$row.FullPath$</set>
+          <link>#files_creation_in_the_timewindow</link>
         </drilldown>
       </table>
       <table>
@@ -114,50 +116,41 @@
         <drilldown>
           <set token="fileName">$row.File$</set>
           <set token="hostName">$row.host$</set>
-          <link>#context_view</link>
+          <set token="fullPath">$row.FullPath$</set>
+          <link>#files_creation_in_the_timewindow</link>
         </drilldown>
       </table>
     </panel>
   </row>
   <row>
-    <panel id="context_view">
-      <title>Context</title>
-      <input type="dropdown" token="sourcetype_token" searchWhenChanged="true">
-        <label>Timeline sourcetype</label>
-        <fieldForLabel>sourcetype</fieldForLabel>
-        <fieldForValue>sourcetype</fieldForValue>
-        <search>
-          <query>| tstats count where index=$index_token$ by sourcetype</query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <!-- sourcetype not publicly available yet <default>timeline:orc2timeline</default> -->
-      </input>
-      <input type="text" token="span_value" searchWhenChanged="true">
+    <panel id="files_creation_in_the_timewindow">
+      <title>Files creations in the time window of the selected file</title>
+      <input type="text" token="span_value_1" searchWhenChanged="true">
         <label>Span</label>
         <default>5</default>
         <initialValue>5</initialValue>
       </input>
-      <input type="dropdown" token="span_unit" searchWhenChanged="true">
+      <input type="dropdown" token="span_unit_1" searchWhenChanged="true">
         <label></label>
-        <choice value="s">secondes</choice>
+        <choice value="s">seconds</choice>
         <choice value="m">minutes</choice>
+        <choice value="h">hours</choice>
         <choice value="d">days</choice>
-        <default>s</default>
-        <initialValue>s</initialValue>
+        <default>m</default>
+        <initialValue>m</initialValue>
       </input>
       <table>
         <title>Current search : $fileName$</title>
         <search>
-          <query>index=$index_token$ host=$hostName$ sourcetype=$sourcetype_token$ $fileName$ | localize timebefore=$span_value$$span_unit$ timeafter=$span_value$$span_unit$ | map search="search index=$index_token$ host=$hostName$ sourcetype=$sourcetype_token$ earliest=$$starttime$$ latest=$$endtime$$" | sort _time</query>
+          <query>index=$index_token$ sourcetype=anssi:decode $host_token$ $fileName$ | localize timebefore=$span_value_1$$span_unit_1$ timeafter=$span_value_1$$span_unit_1$ | map search="search index=$index_token$ $host_token$ sourcetype=anssi:decode earliest=$$starttime$$ latest=$$endtime$$" | sort _time | search $filter_token$ | fields *</query>
         </search>
         <option name="count">30</option>
         <option name="drilldown">none</option>
         <option name="rowNumbers">false</option>
-        <format type="color" field="_raw">
+        <format type="color" field="FullPath">
           <colorPalette type="expression">if(like(value, "%$fileName$%"), "#E54861", "#F2F4F5")</colorPalette>
         </format>
-        <fields>["_raw"]</fields>
+        <fields>["host","FullPath","FileNameCreationDate","AuthenticodeStatus","final_score","Features","Path","Isolated","WarningInListDLLs","Analysis","SHA1"]</fields>
       </table>
     </panel>
   </row>
