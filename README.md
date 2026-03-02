@@ -1,8 +1,9 @@
-
-
 # DECODE
+[![badge_repo](https://img.shields.io/badge/ANSSI--FR-DECODE-white)](https://github.com/ANSSI-FR/DECODE)
+[![category_badge_internal](https://img.shields.io/badge/category-internal-%23d08fce)](https://anssi-fr.github.io/README.en.html#project-categories)
+[![badge_ouverture_C](https://img.shields.io/badge/code.gouv.fr-publié-orange)](https://documentation.ouvert.numerique.gouv.fr/les-parcours-de-documentation/ouvrir-un-projet-num%C3%A9rique/#niveau-ouverture)
 
-<img src="./decode.png" width="150">
+<img src="./decode.png" width="150"><img src="https://www.sgdsn.gouv.fr/files/styles/ds_image_paragraphe/public/files/Notre_Organisation/logo_anssi.png" alt="ANSSI logo" height="160">
 
 DECODE, or "DEtection de COmpromissions dans les DonnéEs DFIR-ORC" in French, is a stand-alone tool specifically designed for detecting anomalous Portable Executable (PE) files among the NTFSInfo data collected by DFIR-ORC on Microsoft Windows system.
 
@@ -125,3 +126,11 @@ machine_analysis dataset/case1/data/orcs-windows/ORC_Server_machine1_General.7z 
 __DFIR-ORC__: https://github.com/dfir-orc
 
 __DFIR-ORC documentation__: https://dfir-orc.github.io
+
+## French Cybersecurity Agency (ANSSI)
+
+*This projet is managed by [ANSSI](https://cyber.gouv.fr/). To find out more,
+you can go to the
+[page](https://cyber.gouv.fr/enjeux-technologiques/open-source/) (in French)
+dedicated to the ANSSI open source strategy. You can also click on the badges
+at the [top](#top) to learn more about their meaning*
