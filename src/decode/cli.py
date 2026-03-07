@@ -165,7 +165,7 @@ def entrypoint(argv: Optional[Sequence[str]] = None) -> None:
             )
         else:
             analyse(
-                args.ntfs_file,
+                args.file_to_process,
                 list_dlls_file=args.dlls_file,
                 time_windows=args.time_window,
                 start_date=args.start_date,
